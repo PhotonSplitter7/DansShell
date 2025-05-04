@@ -11,8 +11,9 @@
 void zeroArray(char**, int);
 int readActions(int*, char*, int);
 void removeNewline(char* str);
+int initPipes(int[][2], int);
 
-//TODO: wont exicute multiple commands correctly
+
 int main(){
 
 //buffer
@@ -35,6 +36,9 @@ int numActions = 0;
 int numPs = 0;
 //process id 
 int pid = 0;
+//pipes 
+int pipes[NUMCOMMANDS][2];
+
 
 
 
@@ -55,6 +59,12 @@ removeNewline(input);
 /* EXTRACT COMMANDS AND ACTIONS */
 //extract actions 
 numActions = readActions(actions, input, sizeof(actions)/sizeof(actions[0]));
+//create pipes 
+if(initPipes(pipes, numActions) == -1)
+{
+  printf("pipes failed!");
+  exit(1);
+}
 numPs = numActions + 1;
 
 /*printf("numPs: %d \nnumAction: %d\n\n", numPs, numActions);*/
@@ -70,7 +80,7 @@ for(int i = 0; i < 32 && tokPtr != NULL; i++)
 }
 
 
-/* OOP THROUGH COMMANDS AND SPAWN PS FOR EACH. */
+/* LOOP THROUGH COMMANDS AND SPAWN PS FOR EACH. */
 for(int curPs = 0; curPs < numPs; curPs++)
 {
   //fork each child, each child gets zero'ed buffer and argv. no need to clean up
@@ -84,6 +94,19 @@ for(int curPs = 0; curPs < numPs; curPs++)
 
   if(pid == 0)
   {
+
+
+
+
+    //DUP2 ATTACH PIPES!!!
+    // if(!dup2(pipes[],STDIN_FILENO))
+    // {
+    //   print("Failed dup2!");
+    //   exit(1);
+    // }
+
+
+
     //copy command to temp, then strtok it
     char temp[BUFSIZE]; memset(temp, 0, BUFSIZE);
     strcpy(temp, commands[curPs]);
@@ -184,4 +207,17 @@ void removeNewline(char* str) {
     if (len > 0 && str[len - 1] == '\n') {
         str[len - 1] = '\0';
     }
+}
+
+//initializes pipes 
+int initPipes(int pipes[][2], int numPipes){
+  
+  for(int i = 0; i < numPipes && i < NUMCOMMANDS; i++)
+  {
+    if(pipe(pipes[i]) == -1)
+    {
+      return -1;
+    }
+  }
+  return 0;
 }

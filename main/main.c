@@ -6,6 +6,7 @@
 #include <wait.h>
 
 #define BUFSIZE 256
+#define NUMCOMMANDS 32
 
 void zeroArray(char**, int);
 int readActions(int*, char*, int);
@@ -15,18 +16,18 @@ void removeNewline(char* str);
 int main(){
 
 //buffer
-char input[256];
-memset(input, 0, 256);
+char input[BUFSIZE];
+memset(input, 0, BUFSIZE);
 //list of commands "ls -la"
-char commands[32][256];
-memset(commands, 0, sizeof(commands));
+char commands[NUMCOMMANDS][BUFSIZE];
+memset(commands, 0, NUMCOMMANDS * BUFSIZE * sizeof(char));
 //array of actions "pipe, redirect" represented in int
-int actions[32];
+int actions[NUMCOMMANDS - 1];
 memset(actions, 0, sizeof(actions)/sizeof(actions[0]));
 //strtok pointer
 char* tokPtr = NULL;
 //argv for execvp. ran on each command
-char* args[256];
+char* args[BUFSIZE];
 zeroArray(args, sizeof(args)/sizeof(args[0]));
 //num of ps to exicute - 1
 int numActions = 0;
@@ -39,56 +40,70 @@ int pid = 0;
 
 /*PROCESS INPUT*/
 //get input
+printf("\n>> ");
+
 if(fgets(input, sizeof(input), stdin) == NULL)
 {
    printf("fgets failed!");
    exit(1);
 }
+
+printf("\n");
 removeNewline(input);
 
 
-/*EXTRACT COMMANDS AND ACTIONS*/
+/* EXTRACT COMMANDS AND ACTIONS */
 //extract actions 
 numActions = readActions(actions, input, sizeof(actions)/sizeof(actions[0]));
 numPs = numActions + 1;
-printf("numPs: %d \nnumAction: %d\n\n", numPs, numActions);//debug
+
+/*printf("numPs: %d \nnumAction: %d\n\n", numPs, numActions);*/
 
 //split by command
 tokPtr = strtok(input, "|<>");
+
 for(int i = 0; i < 32 && tokPtr != NULL; i++)
 {
    strcpy(commands[i], tokPtr);
-  // printf("--%s--\n", commands[i]);//debug
+  /**printf("--%s--\n", commands[i]);*/
    tokPtr = strtok(NULL, "|<>");
 }
 
-printf("DEBUG\n");
-for(int i = 0;i<numPs; i++){
-printf("%s\n", commands[i]);
-}
-printf("___________________________\n");
 
-/*EXTRACT ARGV AND EXICUTE-----------------------------------------------------------------*/
-//split by arg and execute
+/* OOP THROUGH COMMANDS AND SPAWN PS FOR EACH. */
 for(int curPs = 0; curPs < numPs; curPs++)
 {
-   //copy command to temp, then strtok it
-   char temp[BUFSIZE]; memset(temp, 0, BUFSIZE);
-   strcpy(temp, commands[curPs]);
+  //fork each child, each child gets zero'ed buffer and argv. no need to clean up
+  pid = fork(); 
 
-   //split temp command by space into argv
-   tokPtr = strtok(temp, " ");
-   for(int word; tokPtr != NULL && word < BUFSIZE; word++)
-   {
-      args[word] = tokPtr;//TODO  args[word] = tokPtr or address of tokPtr
+  if(pid < 0)
+  {
+    printf("failed fork\n");
+    exit(0);
+  }
+
+  if(pid == 0)
+  {
+    //copy command to temp, then strtok it
+    char temp[BUFSIZE]; memset(temp, 0, BUFSIZE);
+    strcpy(temp, commands[curPs]);
+
+    //split temp command by space into argv
+    tokPtr = strtok(temp, " ");
+    for(int word; tokPtr != NULL && word < BUFSIZE; word++)
+    {
+      args[word] = tokPtr;
       tokPtr = strtok(NULL, " ");
-printf("(%s)\n", args[word]);
-   }
-printf(">NEXT COMMAND>>>\n");
+      //printf("(%s)\n", args[word]);
+      
+    }
 
-  //clear temp and argv 
-  zeroArray(args, sizeof(args) / sizeof(args[0]));
-  memset(temp, 0, BUFSIZE);
+   //execvp 
+   execvp(args[0], args);
+   printf("---------------------------------------\n");
+   //exit child when done
+   exit(0);
+  }
 
 }
 

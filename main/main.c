@@ -92,18 +92,45 @@ for(int curPs = 0; curPs < numPs; curPs++)
     exit(0);
   }
 
+  //CHILD PS
   if(pid == 0)
   {
+    //DEBUG
+    printf("numPs: %d\n", numPs);
+    printf("num actions: %d\n", numActions);
 
+    //if more than 1 ps then pipes needed
+    if(numPs > 1)
+    {
+      //redirect stdout to pipe1 write
+       if(curPs == 0)
+       {
+          dup2(pipes[curPs][1], STDOUT_FILENO);
+       }
+       
+       //last ps stdin to last pipe read
+       else if(curPs == numPs - 1)
+       {
+          dup2(pipes[curPs - 1][0], STDIN_FILENO);
+       }
 
+       //middle pipes
+       else
+       {
+        //stdin to pipe before read
+        dup2(pipes[curPs - 1][0], STDIN_FILENO);
+        //stdout to pipe write
+        dup2(pipes[curPs][1], STDOUT_FILENO);
+       }
+    }
 
-
-    //DUP2 ATTACH PIPES!!!
-    // if(!dup2(pipes[],STDIN_FILENO))
-    // {
-    //   print("Failed dup2!");
-    //   exit(1);
-    // }
+    //close all pipe, heck why not?
+    //parent close pipes
+    for(int i = 0; i < numActions; i++)
+    {
+      close(pipes[i][0]);
+      close(pipes[i][1]);
+    }
 
 
 
@@ -113,12 +140,11 @@ for(int curPs = 0; curPs < numPs; curPs++)
 
     //split temp command by space into argv
     tokPtr = strtok(temp, " ");
-    for(int word; tokPtr != NULL && word < BUFSIZE; word++)
+    for(int word = 0; tokPtr != NULL && word < BUFSIZE; word++)
     {
       args[word] = tokPtr;
       tokPtr = strtok(NULL, " ");
       //printf("(%s)\n", args[word]);
-      
     }
 
    //execvp 
@@ -130,6 +156,14 @@ for(int curPs = 0; curPs < numPs; curPs++)
 
 }
 
+//parent close pipes
+for(int i = 0; i < numActions; i++)
+{
+  close(pipes[i][0]);
+  close(pipes[i][1]);
+}
+
+//parent wait
 for(int i = 0; i < numPs; i++)
 {
    wait(NULL);
@@ -139,7 +173,7 @@ return 0;
 
 
 
-//functions 
+/* FUNCTIONS */
 
 void zeroArray(char** ar, int size){
     for(int i=0; i<size; i++){
@@ -221,3 +255,4 @@ int initPipes(int pipes[][2], int numPipes){
   }
   return 0;
 }
+

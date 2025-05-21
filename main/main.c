@@ -13,18 +13,19 @@ int readActions(int*, char*, int);
 void removeNewline(char* str);
 int initPipes(int[][2], int);
 
+//TODO handle quotations in args like grep "hi"
 
 int main(){
 
 //buffer
 char input[BUFSIZE];
-memset(input, 0, BUFSIZE);
+memset(input, 0, sizeof(input));
 //list of commands "ls -la"
 char commands[NUMCOMMANDS][BUFSIZE];
-memset(commands, 0, NUMCOMMANDS * BUFSIZE * sizeof(char));
+memset(commands, 0, sizeof(commands));
 //array of actions "pipe, redirect" represented in int
 int actions[NUMCOMMANDS - 1];
-memset(actions, 0, sizeof(actions)/sizeof(actions[0]));
+memset(actions, 0, sizeof(actions));
 //strtok pointer
 char* tokPtr = NULL;
 //argv for execvp. ran on each command
@@ -52,13 +53,14 @@ if(fgets(input, sizeof(input), stdin) == NULL)
    exit(1);
 }
 
-printf("\n");
 removeNewline(input);
+printf("\n");
 
 
 /* EXTRACT COMMANDS AND ACTIONS */
 //extract actions 
 numActions = readActions(actions, input, sizeof(actions)/sizeof(actions[0]));
+
 //create pipes 
 if(initPipes(pipes, numActions) == -1)
 {
@@ -67,19 +69,21 @@ if(initPipes(pipes, numActions) == -1)
 }
 numPs = numActions + 1;
 
-/*printf("numPs: %d \nnumAction: %d\n\n", numPs, numActions);*/
+
 
 //split by command
 tokPtr = strtok(input, "|<>");
 
-for(int i = 0; i < 32 && tokPtr != NULL; i++)
+for(int i = 0; i < NUMCOMMANDS && tokPtr != NULL; i++)
 {
    strcpy(commands[i], tokPtr);
-  /**printf("--%s--\n", commands[i]);*/
    tokPtr = strtok(NULL, "|<>");
 }
 
-
+   //DEBUG
+    printf("numPs: %d\n", numPs);
+    printf("num actions: %d\n\n\n", numActions);
+    
 /* LOOP THROUGH COMMANDS AND SPAWN PS FOR EACH. */
 for(int curPs = 0; curPs < numPs; curPs++)
 {
@@ -92,14 +96,29 @@ for(int curPs = 0; curPs < numPs; curPs++)
     exit(0);
   }
 
-  //CHILD PS
+  //************************CHILD PS***********************
   if(pid == 0)
   {
-    //DEBUG
-    printf("numPs: %d\n", numPs);
-    printf("num actions: %d\n", numActions);
+ 
+    //copy command to temp, then strtok it
+    char temp[BUFSIZE]; memset(temp, 0, sizeof(temp));
+    strcpy(temp, commands[curPs]);
 
-    //if more than 1 ps then pipes needed
+    
+    //DEBUG
+    //split temp command by space or quotation into argv- COULD CAUSE ISSUES with quotation!
+    tokPtr = strtok(temp, " ");
+    for(int word = 0; tokPtr != NULL && word < BUFSIZE; word++)
+    {
+      args[word] = tokPtr;
+      printf("[%s] ", args[word]);//DEBUG
+      fflush(stdout);//stdout buffer wont print to screen until \n detected.
+      tokPtr = strtok(NULL, " ");
+    }
+    printf("\n");//DEBUG
+    
+      //SETUP PIPES
+      //if more than 1 ps then pipes needed
     if(numPs > 1)
     {
       //redirect stdout to pipe1 write
@@ -132,27 +151,11 @@ for(int curPs = 0; curPs < numPs; curPs++)
       close(pipes[i][1]);
     }
 
-
-
-    //copy command to temp, then strtok it
-    char temp[BUFSIZE]; memset(temp, 0, BUFSIZE);
-    strcpy(temp, commands[curPs]);
-
-    //split temp command by space into argv
-    tokPtr = strtok(temp, " ");
-    for(int word = 0; tokPtr != NULL && word < BUFSIZE; word++)
-    {
-      args[word] = tokPtr;
-      tokPtr = strtok(NULL, " ");
-      //printf("(%s)\n", args[word]);
-    }
-
    //execvp 
    execvp(args[0], args);
-   printf("---------------------------------------\n");
    //exit child when done
    exit(0);
-  }
+  }//**********************************END CHILD **********************/
 
 }
 

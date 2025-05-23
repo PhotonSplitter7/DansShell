@@ -82,8 +82,8 @@ for(int i = 0; i < NUMCOMMANDS && tokPtr != NULL; i++)
 }
 
    //DEBUG
-    printf("numPs: %d\n", numPs);
-    printf("num actions: %d\n\n\n", numActions);
+    //printf("numPs: %d\n", numPs);
+    //printf("num actions: %d\n\n\n", numActions);
     
 /* LOOP THROUGH COMMANDS AND SPAWN PS FOR EACH. */
 for(int curPs = 0; curPs < numPs; curPs++)
@@ -106,20 +106,9 @@ for(int curPs = 0; curPs < numPs; curPs++)
     strcpy(temp, commands[curPs]);
 
     
-    //DEBUG
     //split temp command by space or quotation into argv- COULD CAUSE ISSUES with quotation!
-    
-    // tokPtr = strtok(temp, " ");
-    // for(int word = 0; tokPtr != NULL && word < BUFSIZE; word++)
-    // {
-    //   args[word] = tokPtr;
-    //   printf("[%s] ", args[word]);//DEBUG
-    //   fflush(stdout);//stdout buffer wont print to screen until \n detected.
-    //   tokPtr = strtok(NULL, " ");
-    // }
-
     fillArgv(temp, sizeof(temp)/sizeof(temp[0]), args);
-    printf("\n");//DEBUG
+    //printf("\n");//DEBUG
     
       //SETUP PIPES
       //if more than 1 ps then pipes needed
@@ -295,7 +284,7 @@ void fillArgv(char * ar, int arSize, char** argv){
                 }
             }
             parsingCommand = 0;//done parsing
-            printf("break--\n");//debug
+            //printf("break--\n");//debug
         }
         else if(parsingCommand == 0)
         {

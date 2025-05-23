@@ -20,18 +20,14 @@ int main(){
 
 //buffer
 char input[BUFSIZE];
-memset(input, 0, sizeof(input));
 //list of commands "ls -la"
 char commands[NUMCOMMANDS][BUFSIZE];
-memset(commands, 0, sizeof(commands));
 //array of actions "pipe, redirect" represented in int
 int actions[NUMCOMMANDS - 1];
-memset(actions, 0, sizeof(actions));
 //strtok pointer
 char* tokPtr = NULL;
 //argv for execvp. ran on each command
 char* args[BUFSIZE];
-zeroArray(args, sizeof(args)/sizeof(args[0]));
 //num of ps to exicute - 1
 int numActions = 0;
 //num ps 
@@ -41,8 +37,14 @@ int pid = 0;
 //pipes 
 int pipes[NUMCOMMANDS][2];
 
+while(1)
+{
 
-
+//clear buffers
+memset(input, 0, sizeof(input));
+memset(commands, 0, sizeof(commands));
+memset(actions, 0, sizeof(actions));
+zeroArray(args, sizeof(args)/sizeof(args[0]));
 
 /*PROCESS INPUT*/
 //get input
@@ -163,6 +165,7 @@ for(int i = 0; i < numActions; i++)
 for(int i = 0; i < numPs; i++)
 {
    wait(NULL);
+}
 }
 return 0;
 }

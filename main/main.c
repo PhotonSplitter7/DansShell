@@ -12,6 +12,7 @@ void zeroArray(char**, int);
 int readActions(int*, char*, int);
 void removeNewline(char* str);
 int initPipes(int[][2], int);
+void fillArgv(char *, int, char**);
 
 //TODO handle quotations in args like grep "hi"
 
@@ -107,14 +108,17 @@ for(int curPs = 0; curPs < numPs; curPs++)
     
     //DEBUG
     //split temp command by space or quotation into argv- COULD CAUSE ISSUES with quotation!
-    tokPtr = strtok(temp, " ");
-    for(int word = 0; tokPtr != NULL && word < BUFSIZE; word++)
-    {
-      args[word] = tokPtr;
-      printf("[%s] ", args[word]);//DEBUG
-      fflush(stdout);//stdout buffer wont print to screen until \n detected.
-      tokPtr = strtok(NULL, " ");
-    }
+    
+    // tokPtr = strtok(temp, " ");
+    // for(int word = 0; tokPtr != NULL && word < BUFSIZE; word++)
+    // {
+    //   args[word] = tokPtr;
+    //   printf("[%s] ", args[word]);//DEBUG
+    //   fflush(stdout);//stdout buffer wont print to screen until \n detected.
+    //   tokPtr = strtok(NULL, " ");
+    // }
+
+    fillArgv(temp, sizeof(temp)/sizeof(temp[0]), args);
     printf("\n");//DEBUG
     
       //SETUP PIPES
@@ -259,3 +263,47 @@ int initPipes(int pipes[][2], int numPipes){
   return 0;
 }
 
+
+//custom string parser to include strings (replace with official library of some sort)
+//0 success, -1 fail 
+void fillArgv(char * ar, int arSize, char** argv){
+    
+    int argvIndex = 0;
+    int parsingCommand = 0;
+
+    for(int arIndex = 0; arIndex < arSize && ar[arIndex] != 0; arIndex++)
+    {
+        if(ar[arIndex] == ' ')
+        {
+            ar[arIndex] = 0;
+            parsingCommand = 0;
+        }
+        else if((ar[arIndex] == '\"' || ar[arIndex] == '\'') && parsingCommand == 0)
+        {
+            parsingCommand = 1;//signal parsing for safety
+            ar[arIndex] = 0;//set quotation to null
+            arIndex++;//move cursor to right of quotation
+            argv[argvIndex] = &ar[arIndex];//set argv to start of substring
+            argvIndex++;//set argv index for next command
+
+            for(; ar[arIndex] != 0; arIndex++)
+            {
+                if(ar[arIndex] == '\'' || ar[arIndex] == '\"')
+                {
+                    ar[arIndex] = 0;//nullify end quotation
+                    break;
+                }
+            }
+            parsingCommand = 0;//done parsing
+            printf("break--\n");//debug
+        }
+        else if(parsingCommand == 0)
+        {
+            argv[argvIndex] = &ar[arIndex];
+            
+            argvIndex++;
+            parsingCommand = 1;//signal that we are looking for end of word
+        }
+    }
+
+}
